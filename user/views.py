@@ -15,7 +15,8 @@ class ChangePasswordView(APIView):
 
     @swagger_auto_schema(
         operation_summary="Change user password",
-        operation_description="Allows authenticated users to change their password by providing the old and new passwords.",
+        operation_description="Allows authenticated users to change their password by providing the old and new "
+                              "passwords.",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
