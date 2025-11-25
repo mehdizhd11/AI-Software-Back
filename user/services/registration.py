@@ -1,4 +1,4 @@
-from typing import Mapping, MutableMapping
+from typing import Mapping, MutableMapping, Protocol
 from customer.models import CustomerProfile
 from restaurant.models import RestaurantProfile
 from user.models import User
@@ -11,35 +11,62 @@ from user.models import User
 # The API responses and serializers remain the same; only the creation logic moves to the service layer.
 
 
-def _register_customer(data: MutableMapping | Mapping) -> User:
-    payload = dict(data)
-    state = payload.pop('state', 'approved')
-    user = User.objects.create_user(**payload, role='customer')
-    CustomerProfile.objects.create(user=user, state=state)
-    return user
+class RegistrationStrategy(Protocol):
+    def register(self, data: MutableMapping | Mapping) -> User:
+        ...
 
 
-def _register_restaurant_manager(data: MutableMapping | Mapping) -> User:
-    payload = dict(data)
-    name = payload.pop('name')
-    business_type = payload.pop('business_type')
-    city_name = payload.pop('city_name')
-    state = 'pending'
+class _CustomerRegistrationStrategy:
+    def register(self, data: MutableMapping | Mapping) -> User:
+        payload = dict(data)
+        state = payload.pop('state', 'approved')
+        user = User.objects.create_user(**payload, role='customer')
+        CustomerProfile.objects.create(user=user, state=state)
+        return user
 
-    manager = User.objects.create_user(**payload, role='restaurant_manager')
-    RestaurantProfile.objects.create(
-        manager=manager,
-        name=name,
-        business_type=business_type,
-        city_name=city_name,
-        state=state,
-    )
-    return manager
+
+class _RestaurantManagerRegistrationStrategy:
+    def register(self, data: MutableMapping | Mapping) -> User:
+        payload = dict(data)
+        name = payload.pop('name')
+        business_type = payload.pop('business_type')
+        city_name = payload.pop('city_name')
+        state = 'pending'
+
+        manager = User.objects.create_user(**payload, role='restaurant_manager')
+        RestaurantProfile.objects.create(
+            manager=manager,
+            name=name,
+            business_type=business_type,
+            city_name=city_name,
+            state=state,
+        )
+        return manager
+
+
+class RegistrationService(Protocol):
+    def register_user(self, role: str, data: MutableMapping | Mapping) -> User:
+        ...
+
+
+class DefaultRegistrationService:
+    def __init__(self, strategies: Mapping[str, RegistrationStrategy] | None = None):
+        self._strategies = strategies or {
+            'customer': _CustomerRegistrationStrategy(),
+            'restaurant_manager': _RestaurantManagerRegistrationStrategy(),
+        }
+
+    def register_user(self, role: str, data: MutableMapping | Mapping) -> User:
+        try:
+            strategy = self._strategies[role]
+        except KeyError:
+            raise ValueError(f"Unsupported role: {role}")
+
+        return strategy.register(data)
+
+
+default_registration_service = DefaultRegistrationService()
 
 
 def register_user(role: str, data: MutableMapping | Mapping) -> User:
-    if role == 'customer':
-        return _register_customer(data)
-    if role == 'restaurant_manager':
-        return _register_restaurant_manager(data)
-    raise ValueError(f"Unsupported role: {role}")
+    return default_registration_service.register_user(role, data)

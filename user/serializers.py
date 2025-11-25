@@ -2,7 +2,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import User
 from restaurant.models import RestaurantProfile
-from user.services.registration import register_user
+from user.services.registration import RegistrationService, default_registration_service
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -24,6 +24,10 @@ class CustomerSignUpSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(max_length=30)
     state = serializers.CharField(max_length=30, required=False)
     role = 'customer'
+
+    def __init__(self, *args, registration_service: RegistrationService = default_registration_service, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._registration_service = registration_service
 
 
     class Meta:
@@ -51,7 +55,7 @@ class CustomerSignUpSerializer(serializers.ModelSerializer):
     #     return user
 
     def create(self, validated_data):
-        return register_user(self.role, validated_data)
+        return self._registration_service.register_user(self.role, validated_data)
 
 
 class RestaurantSignUpSerializer(serializers.ModelSerializer):
@@ -60,6 +64,10 @@ class RestaurantSignUpSerializer(serializers.ModelSerializer):
     business_type = serializers.CharField(max_length=255)
     city_name = serializers.CharField(max_length=255)
     role = 'restaurant_manager'
+
+    def __init__(self, *args, registration_service: RegistrationService = default_registration_service, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._registration_service = registration_service
 
 
     class Meta:
@@ -98,7 +106,7 @@ class RestaurantSignUpSerializer(serializers.ModelSerializer):
     #
     #     return manager
     def create(self, validated_data):
-        return register_user(self.role, validated_data)
+        return self._registration_service.register_user(self.role, validated_data)
 
 
 class PasswordChangeSerializer(serializers.Serializer):
