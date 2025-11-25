@@ -20,7 +20,6 @@ import pytz
 class MyRestaurantProfileView(APIView):
     permission_classes = [IsAuthenticated, IsRestaurantManager]
 
-
     @swagger_auto_schema(
         operation_summary="Retrieve your restaurant's profile details.",
         responses={
@@ -38,10 +37,9 @@ class MyRestaurantProfileView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except RestaurantProfile.DoesNotExist:
             return Response(
-                {"detail": "Restaurant profile not found."},
+                {"detail": "Restaurant profile not found."}, 
                 status=status.HTTP_404_NOT_FOUND
             )
-
 
     @swagger_auto_schema(
         operation_summary="Update your restaurant's profile details.",
@@ -65,16 +63,14 @@ class MyRestaurantProfileView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except RestaurantProfile.DoesNotExist:
             return Response(
-                {"detail": "Restaurant profile not found."},
+                {"detail": "Restaurant profile not found."}, 
                 status=status.HTTP_404_NOT_FOUND
             )
-
 
 class PublicRestaurantProfileView(generics.RetrieveAPIView):
     queryset = RestaurantProfile.objects.all()
     serializer_class = RestaurantProfileSerializer
     lookup_field = 'id'
-
 
     @swagger_auto_schema(
         operation_summary="Retrieve a restaurant's profile by ID.",
@@ -87,11 +83,10 @@ class PublicRestaurantProfileView(generics.RetrieveAPIView):
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
-
+   
 class ItemListCreateView(generics.ListCreateAPIView):
     serializer_class = ItemSerializer
     permission_classes = [IsAuthenticated, IsRestaurantManager]
-
 
     @swagger_auto_schema(
         operation_summary="List Items",
@@ -104,7 +99,6 @@ class ItemListCreateView(generics.ListCreateAPIView):
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
-
 
     @swagger_auto_schema(
         operation_summary="Create Item",
@@ -119,21 +113,17 @@ class ItemListCreateView(generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
 
-
     def get_queryset(self):
-        restaurant = self.request.user.restaurant_profile
+        restaurant = self.request.user.restaurant_profile 
         return Item.objects.filter(restaurant=restaurant)
-
 
     def perform_create(self, serializer):
         restaurant = self.request.user.restaurant_profile
         serializer.save(restaurant=restaurant)
 
-
 class ItemDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ItemSerializer
     permission_classes = [IsAuthenticated, IsRestaurantManager]
-
 
     @swagger_auto_schema(
         operation_summary="Retrieve Item",
@@ -147,7 +137,6 @@ class ItemDetailView(generics.RetrieveUpdateDestroyAPIView):
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
-
 
     @swagger_auto_schema(
         operation_summary="Update Item",
@@ -163,7 +152,6 @@ class ItemDetailView(generics.RetrieveUpdateDestroyAPIView):
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
-
     @swagger_auto_schema(
         operation_summary="Delete Item",
         responses={
@@ -177,24 +165,10 @@ class ItemDetailView(generics.RetrieveUpdateDestroyAPIView):
     def delete(self, request, *args, **kwargs):
         return super().delete(request, *args, **kwargs)
 
-
     def get_queryset(self):
-        # 1) Short-circuit for Swagger schema generation
-        if getattr(self, 'swagger_fake_view', False):
-            return Item.objects.none()
-
-        # 2) In real requests, user should be authenticated due to permission_classes
-        user = self.request.user
-
-        # Optional extra safety if you ever call this view without IsAuthenticated
-        if not user.is_authenticated:
-            return Item.objects.none()
-
-        # 3) Now it is safe to access restaurant_profile
-        restaurant = user.restaurant_profile
+        restaurant = self.request.user.restaurant_profile  
         return Item.objects.filter(restaurant=restaurant)
-
-
+    
     def get_object(self):
         queryset = self.get_queryset()
         pk = self.kwargs.get('pk')
@@ -254,7 +228,7 @@ class RestaurantListView(APIView):
         query = request.query_params.get('query', '').strip()
         business_type = request.query_params.get('business_type', None)
         is_open = request.query_params.get('is_open', None)
-
+        
         desired_timezone = pytz.timezone('Asia/Tehran')
         current_time = timezone.now()
         localized_time = current_time.astimezone(desired_timezone)
@@ -290,10 +264,10 @@ class RestaurantListView(APIView):
             status=status.HTTP_200_OK
         )
 
+    
 
 class SalesReportView(APIView):
     permission_classes = [IsAuthenticated, IsRestaurantManager]
-
 
     @swagger_auto_schema(
         operation_summary="Sales Report",

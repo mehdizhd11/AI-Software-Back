@@ -40,6 +40,16 @@ class CustomerSignUpSerializer(serializers.ModelSerializer):
         return value
 
 
+    # def create(self, validated_data):
+    #     state = validated_data.pop('state', 'approved')
+    #     role = 'customer'
+    #
+    #     user = User.objects.create_user(**validated_data, role=role)
+    #
+    #     CustomerProfile.objects.create(user=user, state=state)
+    #
+    #     return user
+
     def create(self, validated_data):
         return register_user(self.role, validated_data)
 
@@ -66,6 +76,27 @@ class RestaurantSignUpSerializer(serializers.ModelSerializer):
         return value
 
 
+    # def create(self, validated_data):
+    #     name = validated_data.pop('name')
+    #     business_type = validated_data.pop('business_type')
+    #     city_name = validated_data.pop('city_name')
+    #     state = 'pending'
+    #     role = 'restaurant_manager'
+    #
+    #     manager = User.objects.create_user(
+    #         **validated_data,
+    #         role=role,
+    #     )
+    #
+    #     RestaurantProfile.objects.create(
+    #         manager=manager,
+    #         name=name,
+    #         business_type=business_type,
+    #         city_name=city_name,
+    #         state=state
+    #     )
+    #
+    #     return manager
     def create(self, validated_data):
         return register_user(self.role, validated_data)
 

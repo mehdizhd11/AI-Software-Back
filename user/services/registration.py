@@ -1,8 +1,14 @@
 from typing import Mapping, MutableMapping
-
 from customer.models import CustomerProfile
 from restaurant.models import RestaurantProfile
 from user.models import User
+
+
+# Apply a Service/Factory pattern for user registration:
+# a service dispatches on a role (customer vs. restaurant manager) and delegates creation to role-specific handlers.
+# This centralizes shared steps (e.g., unique phone-number check, creating User)
+# while keeping each role’s specifics (profile model and default state).
+# The API responses and serializers remain the same; only the creation logic moves to the service layer.
 
 
 def _register_customer(data: MutableMapping | Mapping) -> User:
