@@ -1,8 +1,8 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import User
-from customer.models import CustomerProfile
 from restaurant.models import RestaurantProfile
+from user.services.registration import register_user
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -41,14 +41,7 @@ class CustomerSignUpSerializer(serializers.ModelSerializer):
 
 
     def create(self, validated_data):
-        state = validated_data.pop('state', 'approved')
-        role = 'customer'
-
-        user = User.objects.create_user(**validated_data, role=role)
-
-        CustomerProfile.objects.create(user=user, state=state)
-
-        return user
+        return register_user(self.role, validated_data)
 
 
 class RestaurantSignUpSerializer(serializers.ModelSerializer):
@@ -56,6 +49,7 @@ class RestaurantSignUpSerializer(serializers.ModelSerializer):
     name = serializers.CharField(max_length=255)
     business_type = serializers.CharField(max_length=255)
     city_name = serializers.CharField(max_length=255)
+    role = 'restaurant_manager'
 
 
     class Meta:
@@ -73,26 +67,7 @@ class RestaurantSignUpSerializer(serializers.ModelSerializer):
 
 
     def create(self, validated_data):
-        name = validated_data.pop('name')
-        business_type = validated_data.pop('business_type')
-        city_name = validated_data.pop('city_name')
-        state = 'pending'
-        role = 'restaurant_manager'
-
-        manager = User.objects.create_user(
-            **validated_data,
-            role=role,
-        )
-
-        RestaurantProfile.objects.create(
-            manager=manager,
-            name=name,
-            business_type=business_type,
-            city_name=city_name,
-            state=state
-        )
-
-        return manager
+        return register_user(self.role, validated_data)
 
 
 class PasswordChangeSerializer(serializers.Serializer):
