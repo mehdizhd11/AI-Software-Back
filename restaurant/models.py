@@ -3,9 +3,8 @@ import uuid
 from django.core.validators import FileExtensionValidator
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Avg
 from user.models import User
-from order.models import Order, OrderItem, Review
+from .services import ScoreCalculator
 
 
 def validate_photo_size(value):
@@ -61,13 +60,7 @@ class RestaurantProfile(models.Model):
     )
 
     def calculate_score(self):
-        reviews = Review.objects.filter(order__restaurant=self)
-        avg_score = reviews.aggregate(average=Avg('score'))['average']
-        return round(avg_score, 2) if avg_score else 0.0
-    
-    @property
-    def score(self):
-        return self.calculate_score()
+        return ScoreCalculator.calculate_restaurant_score(self)
 
     def __str__(self):
         return f"Restaurant: {self.name} ({self.manager.phone_number})"
@@ -101,14 +94,7 @@ class Item(models.Model):
     )
 
     def calculate_score(self):
-        order_items = OrderItem.objects.filter(item=self)
-        orders = Order.objects.filter(order_id__in=order_items.values_list('order_id', flat=True))
-        avg_score = Review.objects.filter(order__in=orders).aggregate(average=Avg('score'))['average']
-        return round(avg_score, 2) if avg_score else 0.0
-
-    @property
-    def score(self):
-        return self.calculate_score()
+        return ScoreCalculator.calculate_item_score(self)
 
     def __str__(self):
         return self.name

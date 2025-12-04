@@ -1,15 +1,14 @@
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from restaurant.models import RestaurantProfile
 from restaurant.permissions import IsRestaurantManager
 from .models import Order
 from .serializers import OrderListSerializer, OrderStatusUpdateSerializer
+from .services import RestaurantOrderService, RestaurantResolver
 
 class RestaurantOrderListView(generics.ListAPIView):
     serializer_class = OrderListSerializer
@@ -29,17 +28,13 @@ class RestaurantOrderListView(generics.ListAPIView):
         }    
     )
     def get(self, request, *args, **kwargs):
-        try:
-            restaurant = request.user.restaurant_profile
-        except RestaurantProfile.DoesNotExist:
-            raise NotFound(detail="Restaurant not found.")
+        restaurant = RestaurantResolver(request.user).get_restaurant()
+        orders = RestaurantOrderService(restaurant).list_orders()
 
-        queryset = Order.objects.filter(restaurant=restaurant)
-
-        if not queryset.exists():
+        if not orders.exists():
             return Response([], status=status.HTTP_200_OK)
-        
-        serializer = OrderListSerializer(queryset, many=True)
+
+        serializer = OrderListSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class UpdateOrderStatusView(APIView):
@@ -58,13 +53,8 @@ class UpdateOrderStatusView(APIView):
         },
     )
     def patch(self, request, *args, **kwargs):
-        try:
-            restaurant = request.user.restaurant_profile
-            order = Order.objects.get(restaurant=restaurant, order_id=kwargs['id'])
-        except RestaurantProfile.DoesNotExist:
-            raise NotFound(detail="Restaurant not found.")
-        except Order.DoesNotExist:
-            return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+        restaurant = RestaurantResolver(request.user).get_restaurant()
+        order = RestaurantOrderService(restaurant).get_order_by_id(kwargs['id'])
 
         serializer = OrderStatusUpdateSerializer(order, data=request.data, partial=True)
         if serializer.is_valid():
