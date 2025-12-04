@@ -2,6 +2,8 @@ from rest_framework import serializers
 from .models import RestaurantProfile, Item
 
 class RestaurantProfileSerializer(serializers.ModelSerializer):
+    score = serializers.SerializerMethodField()
+
     class Meta:
         model = RestaurantProfile
         fields = [
@@ -13,13 +15,19 @@ class RestaurantProfileSerializer(serializers.ModelSerializer):
         if value and not value.name.lower().endswith(('jpg', 'jpeg', 'png')):
             raise serializers.ValidationError("Photo must be in JPEG or PNG format.")
         return value
+
+    def get_score(self, obj):
+        return obj.calculate_score()
     
 
 class ItemSerializer(serializers.ModelSerializer):
     restaurant = serializers.PrimaryKeyRelatedField(read_only=True)
-    score = serializers.FloatField(read_only=True) 
+    score = serializers.SerializerMethodField()
 
     class Meta:
         model = Item
         fields = ['item_id', 'restaurant', 'price', 'discount', 'name', 'description', 'state', 'photo', 'score']
+
+    def get_score(self, obj):
+        return obj.calculate_score()
 

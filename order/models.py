@@ -1,6 +1,7 @@
+from django.conf import settings
 from django.db import models
-from django.conf import settings 
 from user.models import User
+
 
 class Order(models.Model):
     DELIVERY_METHOD_CHOICES = [
@@ -38,7 +39,7 @@ class Order(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_items')
     item = models.ForeignKey('restaurant.Item', on_delete=models.CASCADE, related_name='order_items')
-    count = models.PositiveIntegerField() 
+    count = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     discount = models.PositiveIntegerField(default=0, help_text="Discount percentage (0 to 100)")
 
