@@ -3,7 +3,6 @@ from drf_yasg.utils import swagger_auto_schema
 from django.utils import timezone
 from django.http import Http404
 from django.db import models
-from django.utils.timezone import now, timedelta
 from django.db.models import Sum, F
 from rest_framework.views import APIView
 from rest_framework import generics
@@ -14,6 +13,7 @@ from rest_framework import status
 from .models import RestaurantProfile, Item
 from .serializers import RestaurantProfileSerializer, ItemSerializer
 from .permissions import IsRestaurantManager
+from .report_strategies import SALES_REPORT_STRATEGIES
 import pytz
 
 
@@ -293,17 +293,12 @@ class SalesReportView(APIView):
         filter_option = request.query_params.get('filter')
         restaurant = request.user.restaurant_profile
 
-        if filter_option == 'today':
-            start_date = now().replace(hour=0, minute=0, second=0, microsecond=0)
-            end_date = now()
-        elif filter_option == 'last_week':
-            start_date = now() - timedelta(days=7)
-            end_date = now()
-        elif filter_option == 'last_month':
-            start_date = now() - timedelta(days=30)
-            end_date = now()
-        else:
+        try:
+            strategy = SALES_REPORT_STRATEGIES[filter_option]
+        except KeyError:
             raise ValidationError("Invalid filter option. Use 'today', 'last_week', or 'last_month'.")
+
+        start_date, end_date = strategy.get_date_range()
 
         order_items = Item.objects.filter(
             order_items__order__restaurant=restaurant,
